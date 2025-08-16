@@ -8,6 +8,7 @@ import About from './pages/About';
 import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
 import Quizzes from './pages/Quizzes';
+import Decks from './pages/Decks';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -99,6 +100,14 @@ function App() {
           element={
             <ProtectedRoute user={user}>
               <Quizzes />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/decks"
+          element={
+            <ProtectedRoute user={user}>
+              <Decks />
             </ProtectedRoute>
           }
         />

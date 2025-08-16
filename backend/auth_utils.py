@@ -1,10 +1,10 @@
 from datetime import datetime, timedelta
 from typing import Optional
 import jwt
-from .config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
-from .database import SessionLocal
-from . import models
-from . import schemas
+from config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
+from database import SessionLocal
+from models import User
+import schemas
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
@@ -17,13 +17,13 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     return encoded_jwt
 
 def get_user_by_email(db, email: str):
-    return db.query(models.User).filter(models.User.email == email).first()
+    return db.query(User).filter(User.email == email).first()
 
 def get_user_by_google_id(db, google_id: str):
-    return db.query(models.User).filter(models.User.google_id == google_id).first()
+    return db.query(User).filter(User.google_id == google_id).first()
 
 def create_user(db, user: schemas.UserCreate):
-    db_user = models.User(
+    db_user = User(
         google_id=user.google_id,
         email=user.email,
         name=user.name,

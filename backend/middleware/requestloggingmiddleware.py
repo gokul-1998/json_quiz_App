@@ -6,7 +6,6 @@ from jose import JWTError
 import traceback
 from fastapi import Depends
 
-
 class RequestLoggingMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         try:

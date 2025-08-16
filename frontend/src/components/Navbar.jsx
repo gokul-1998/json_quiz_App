@@ -26,6 +26,9 @@ const Navbar = ({ user, onLogout }) => {
               <Link to="/quizzes" className="text-gray-300 hover:text-white">
                 Quizzes
               </Link>
+              <Link to="/decks" className="text-gray-300 hover:text-white">
+                Decks
+              </Link>
             </>
           )}
         </div>

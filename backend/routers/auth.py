@@ -8,9 +8,10 @@ import jwt
 from jwt.exceptions import InvalidTokenError
 from datetime import timedelta
 from typing import Optional
-from .. import schemas, models, auth_utils
-from ..database import get_db
-from ..config import (
+from schemas import UserCreate, User
+from auth_utils import get_user_by_google_id, get_user_by_email, create_user, create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
+from database import get_db
+from config import (
     GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI,
     SECRET_KEY, ALGORITHM
 )
@@ -55,19 +56,19 @@ async def callback(code: str, db: Session = Depends(get_db)):
         user_info = user_response.json()
         
         # Check if user exists, create if not
-        user = auth_utils.get_user_by_google_id(db, user_info["id"])
+        user = get_user_by_google_id(db, user_info["id"])
         if not user:
-            user_create = schemas.UserCreate(
+            user_create = UserCreate(
                 google_id=user_info["id"],
                 email=user_info["email"],
                 name=user_info["name"],
                 picture=user_info.get("picture")
             )
-            user = auth_utils.create_user(db, user_create)
+            user = create_user(db, user_create)
         
         # Create access token
-        access_token_expires = timedelta(minutes=auth_utils.ACCESS_TOKEN_EXPIRE_MINUTES)
-        access_token = auth_utils.create_access_token(
+        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = create_access_token(
             data={"sub": user.email}, expires_delta=access_token_expires
         )
         
@@ -80,7 +81,7 @@ async def logout():
     """Logout user"""
     return {"message": "Logged out successfully"}
 
-@router.get("/user", response_model=schemas.User)
+@router.get("/user", response_model=User)
 async def get_user(request: Request, db: Session = Depends(get_db)):
     """Get current user info"""
     auth_header = request.headers.get("Authorization")
@@ -99,7 +100,7 @@ async def get_user(request: Request, db: Session = Depends(get_db)):
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Could not validate credentials"
             )
-        user = auth_utils.get_user_by_email(db, user_email)
+        user = get_user_by_email(db, user_email)
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,

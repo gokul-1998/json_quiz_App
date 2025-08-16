@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .database import engine, Base
-from .routers import auth
+from database import engine, Base
+from routers import auth, decks
 import os
 
 # Create database tables
@@ -20,7 +20,8 @@ app.add_middleware(
 
 # Include routers
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
-from .middleware.requestloggingmiddleware import RequestLoggingMiddleware
+app.include_router(decks.router, prefix="/decks", tags=["decks"])
+from middleware.requestloggingmiddleware import RequestLoggingMiddleware
 # Add middleware to the app
 app.add_middleware(RequestLoggingMiddleware)
 
