@@ -5,7 +5,6 @@ const Navbar = ({ user, onLogout }) => {
     // Redirect to backend Google login endpoint
     window.location.href = 'http://localhost:8001/auth/login'
   }
-  console.log(user)
   return (
     <nav className="bg-gray-800 p-4">
       <div className="container mx-auto flex items-center justify-between">
