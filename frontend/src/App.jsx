@@ -11,7 +11,6 @@ import Quizzes from './pages/Quizzes';
 
 function App() {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -41,12 +40,6 @@ function App() {
     fetchUser();
   }, []);
 
-  const handleGoogleLogin = () => {
-    setLoading(true)
-    // Redirect to backend Google login endpoint
-    window.location.href = 'http://localhost:8001/auth/login'
-  }
-
   const handleLogout = () => {
     // Clear local storage
     localStorage.removeItem('access_token')
@@ -66,13 +59,7 @@ function App() {
                 {!user ? (
                   <div className="text-center">
                     <p className="mb-4">Sign in to start taking quizzes!</p>
-                    <button
-                      onClick={handleGoogleLogin}
-                      className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
-                      disabled={loading}
-                    >
-                      {loading ? 'Loading...' : 'Sign in with Google'}
-                    </button>
+                    <p className="text-gray-600">Use the Google login button in the navbar above</p>
                   </div>
                 ) : (
                   <div className="text-center">
@@ -103,7 +90,7 @@ function App() {
           path="/profile"
           element={
             <ProtectedRoute user={user}>
-              <Profile />
+              <Profile user={user} />
             </ProtectedRoute>
           }
         />

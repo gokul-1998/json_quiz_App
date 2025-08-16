@@ -20,6 +20,9 @@ app.add_middleware(
 
 # Include routers
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
+from .middleware.requestloggingmiddleware import RequestLoggingMiddleware
+# Add middleware to the app
+app.add_middleware(RequestLoggingMiddleware)
 
 @app.get("/")
 async def root():
