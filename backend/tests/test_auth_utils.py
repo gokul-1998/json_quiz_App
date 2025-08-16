@@ -30,16 +30,15 @@ def test_create_access_token_with_expiration():
     assert isinstance(token, str)
     assert len(token) > 0
 
-@patch("auth_utils.models.User")
-def test_get_user_by_email(mock_user_model):
+def test_get_user_by_email():
     """Test getting a user by email"""
-    # Mock the query result
+    # Create a mock user
     mock_user = Mock()
     mock_user.email = "test@example.com"
-    mock_user_model.query.filter.return_value.first.return_value = mock_user
-    
-    # Create a mock database session
+
+    # Create a mock database session and configure the query chain
     mock_db = Mock()
+    mock_db.query.return_value.filter.return_value.first.return_value = mock_user
     
     # Call the function
     user = get_user_by_email(mock_db, "test@example.com")
@@ -48,16 +47,15 @@ def test_get_user_by_email(mock_user_model):
     assert user is not None
     assert user.email == "test@example.com"
 
-@patch("auth_utils.models.User")
-def test_get_user_by_google_id(mock_user_model):
+def test_get_user_by_google_id():
     """Test getting a user by Google ID"""
-    # Mock the query result
+    # Create a mock user
     mock_user = Mock()
     mock_user.google_id = "123456789"
-    mock_user_model.query.filter.return_value.first.return_value = mock_user
-    
-    # Create a mock database session
+
+    # Create a mock database session and configure the query chain
     mock_db = Mock()
+    mock_db.query.return_value.filter.return_value.first.return_value = mock_user
     
     # Call the function
     user = get_user_by_google_id(mock_db, "123456789")
@@ -66,7 +64,7 @@ def test_get_user_by_google_id(mock_user_model):
     assert user is not None
     assert user.google_id == "123456789"
 
-@patch("auth_utils.models.User")
+@patch("auth_utils.User")
 def test_create_user(mock_user_model):
     """Test creating a user"""
     # Mock the user creation
