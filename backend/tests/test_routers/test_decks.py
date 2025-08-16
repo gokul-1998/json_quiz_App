@@ -44,16 +44,8 @@ def test_create_deck_success(client, test_db, test_user, test_auth_headers):
     assert deck.owner_id == test_user.id
 
 @patch("routers.decks.get_current_user")
-def test_get_decks_success(mock_get_current_user, client, test_db):
+def test_get_decks_success(mock_get_current_user, client, test_db, test_user):
     """Test getting all decks for a user"""
-    # Create a test user
-    test_user = User()
-    test_user.email = "test@example.com"
-    test_user.google_id = "123"
-    test_user.name = "Test User"
-    test_db.add(test_user)
-    test_db.commit()
-    test_db.refresh(test_user)
     
     # Create a test deck
     test_deck = Deck()
@@ -77,16 +69,8 @@ def test_get_decks_success(mock_get_current_user, client, test_db):
     assert response.json()[0]["title"] == "Test Deck"
 
 @patch("routers.decks.get_current_user")
-def test_get_deck_success(mock_get_current_user, client, test_db):
+def test_get_deck_success(mock_get_current_user, client, test_db, test_user):
     """Test getting a specific deck"""
-    # Create a test user
-    test_user = User()
-    test_user.email = "test@example.com"
-    test_user.google_id = "123"
-    test_user.name = "Test User"
-    test_db.add(test_user)
-    test_db.commit()
-    test_db.refresh(test_user)
     
     # Create a test deck
     test_deck = Deck()
@@ -108,16 +92,8 @@ def test_get_deck_success(mock_get_current_user, client, test_db):
     assert response.json()["title"] == "Test Deck"
 
 @patch("routers.decks.get_current_user")
-def test_update_deck_success(mock_get_current_user, client, test_db):
+def test_update_deck_success(mock_get_current_user, client, test_db, test_user):
     """Test updating a deck"""
-    # Create a test user
-    test_user = User()
-    test_user.email = "test@example.com"
-    test_user.google_id = "123"
-    test_user.name = "Test User"
-    test_db.add(test_user)
-    test_db.commit()
-    test_db.refresh(test_user)
     
     # Create a test deck
     test_deck = Deck()
@@ -146,293 +122,176 @@ def test_update_deck_success(mock_get_current_user, client, test_db):
     assert response.status_code == 200
     assert response.json()["title"] == "Updated Test Deck"
 
-@patch("routers.decks.get_current_user")
-@patch("routers.decks.models.Deck")
-def test_get_deck_success(mock_deck_model, mock_get_current_user):
-    """Test getting a specific deck by ID"""
-    # Mock the current user
-    mock_user = Mock()
-    mock_user.id = 1
-    mock_get_current_user.return_value = mock_user
-    
-    # Mock the deck
-    mock_deck = Mock()
-    mock_deck.id = 1
-    mock_deck.title = "Test Deck"
-    mock_deck.owner_id = 1
-    mock_deck_model.query.filter.return_value.first.return_value = mock_deck
-    
-    # Make the request
-    response = client.get("/decks/1", headers={"Authorization": "Bearer test_token"})
-    
-    # Check the response
-    assert response.status_code == 200
-    assert response.json()["id"] == 1
 
-@patch("routers.decks.get_current_user")
-@patch("routers.decks.models.Deck")
-def test_update_deck_success(mock_deck_model, mock_get_current_user):
-    """Test updating a deck"""
-    # Mock the current user
-    mock_user = Mock()
-    mock_user.id = 1
-    mock_get_current_user.return_value = mock_user
-    
-    # Mock the deck
-    mock_deck = Mock()
-    mock_deck.id = 1
-    mock_deck.owner_id = 1
-    mock_deck_model.query.filter.return_value.first.return_value = mock_deck
-    
-    # Make the request
-    response = client.put(
-        "/decks/1",
-        json={
-            "title": "Updated Deck",
-            "description": "An updated test deck"
-        },
-        headers={"Authorization": "Bearer test_token"}
-    )
-    
-    # Check the response
-    assert response.status_code == 200
-    assert response.json()["title"] == "Updated Deck"
 
-@patch("routers.decks.get_current_user")
-@patch("routers.decks.models.Deck")
-def test_delete_deck_success(mock_deck_model, mock_get_current_user):
+
+
+def test_delete_deck_success(client, test_db, test_user, test_auth_headers):
     """Test deleting a deck"""
-    # Mock the current user
-    mock_user = Mock()
-    mock_user.id = 1
-    mock_get_current_user.return_value = mock_user
-    
-    # Mock the deck
-    mock_deck = Mock()
-    mock_deck.id = 1
-    mock_deck.owner_id = 1
-    mock_deck_model.query.filter.return_value.first.return_value = mock_deck
-    
-    # Make the request
-    response = client.delete("/decks/1", headers={"Authorization": "Bearer test_token"})
-    
+    # Create a test deck
+    test_deck = Deck(
+        title="Test Deck for Deletion",
+        description="A deck to be deleted",
+        owner_id=test_user.id
+    )
+    test_db.add(test_deck)
+    test_db.commit()
+    test_db.refresh(test_deck)
+
+    # Make the request to delete the deck
+    response = client.delete(f"/decks/{test_deck.id}", headers=test_auth_headers)
+
     # Check the response
-    assert response.status_code == 200
+    assert response.status_code == 200, f"Response: {response.json()}"
     assert response.json() == {"message": "Deck deleted successfully"}
 
-@patch("routers.decks.get_current_user")
-@patch("routers.decks.models.Deck")
-def test_create_card_success(mock_deck_model, mock_get_current_user):
+    # Verify the deck was deleted from the database
+    deck = test_db.query(Deck).filter(Deck.id == test_deck.id).first()
+    assert deck is None
+
+def test_create_card_success(client, test_db, test_user, test_auth_headers):
     """Test creating a card in a deck"""
-    # Mock the current user
-    mock_user = Mock()
-    mock_user.id = 1
-    mock_get_current_user.return_value = mock_user
-    
-    # Mock the deck
-    mock_deck = Mock()
-    mock_deck.id = 1
-    mock_deck.owner_id = 1
-    mock_deck_model.query.filter.return_value.first.return_value = mock_deck
-    
+    # Create a test deck
+    test_deck = Deck(title="Test Deck", owner_id=test_user.id)
+    test_db.add(test_deck)
+    test_db.commit()
+    test_db.refresh(test_deck)
+
     # Make the request
     response = client.post(
-        "/decks/1/cards",
-        json={
-            "front_content": "Front content",
-            "back_content": "Back content"
-        },
-        headers={"Authorization": "Bearer test_token"}
+        f"/decks/{test_deck.id}/cards",
+        json={"front_content": "Front", "back_content": "Back"},
+        headers=test_auth_headers
     )
-    
-    # Check the response
-    assert response.status_code == 200
-    assert response.json()["front_content"] == "Front content"
 
-@patch("routers.decks.get_current_user")
-@patch("routers.decks.models.Deck")
-@patch("routers.decks.models.Card")
-def test_get_cards_success(mock_card_model, mock_deck_model, mock_get_current_user):
+    # Check the response
+    assert response.status_code == 200, f"Response: {response.json()}"
+    data = response.json()
+    assert data["front_content"] == "Front"
+
+    # Verify in DB
+    card = test_db.query(Card).first()
+    assert card is not None
+    assert card.deck_id == test_deck.id
+
+def test_get_cards_success(client, test_db, test_user, test_auth_headers):
     """Test getting all cards in a deck"""
-    # Mock the current user
-    mock_user = Mock()
-    mock_user.id = 1
-    mock_get_current_user.return_value = mock_user
-    
-    # Mock the deck
-    mock_deck = Mock()
-    mock_deck.id = 1
-    mock_deck.owner_id = 1
-    mock_deck_model.query.filter.return_value.first.return_value = mock_deck
-    
-    # Mock the cards
-    mock_card = Mock()
-    mock_card.id = 1
-    mock_card.front_content = "Front content"
-    mock_card.back_content = "Back content"
-    mock_card.deck_id = 1
-    mock_card_model.query.filter.return_value.offset.return_value.limit.return_value.all.return_value = [mock_card]
-    
+    # Create a test deck and card
+    test_deck = Deck(title="Test Deck", owner_id=test_user.id)
+    test_card = Card(front_content="Front", back_content="Back", deck=test_deck)
+    test_db.add_all([test_deck, test_card])
+    test_db.commit()
+    test_db.refresh(test_deck)
+
     # Make the request
-    response = client.get("/decks/1/cards", headers={"Authorization": "Bearer test_token"})
-    
+    response = client.get(f"/decks/{test_deck.id}/cards", headers=test_auth_headers)
+
     # Check the response
     assert response.status_code == 200
-    assert isinstance(response.json(), list)
-    assert len(response.json()) > 0
+    data = response.json()
+    assert isinstance(data, list)
+    assert len(data) == 1
+    assert data[0]["front_content"] == "Front"
 
-@patch("routers.decks.get_current_user")
-@patch("routers.decks.models.Deck")
-@patch("routers.decks.models.Card")
-def test_update_card_success(mock_card_model, mock_deck_model, mock_get_current_user):
+def test_update_card_success(client, test_db, test_user, test_auth_headers):
     """Test updating a card"""
-    # Mock the current user
-    mock_user = Mock()
-    mock_user.id = 1
-    mock_get_current_user.return_value = mock_user
-    
-    # Mock the deck
-    mock_deck = Mock()
-    mock_deck.id = 1
-    mock_deck.owner_id = 1
-    mock_deck_model.query.filter.return_value.first.return_value = mock_deck
-    
-    # Mock the card
-    mock_card = Mock()
-    mock_card.id = 1
-    mock_card.deck_id = 1
-    mock_card_model.query.filter.return_value.first.return_value = mock_card
-    
+    # Create a test deck and card
+    test_deck = Deck(title="Test Deck", owner_id=test_user.id)
+    test_card = Card(front_content="Front", back_content="Back", deck=test_deck)
+    test_db.add_all([test_deck, test_card])
+    test_db.commit()
+    test_db.refresh(test_card)
+
     # Make the request
     response = client.put(
-        "/decks/1/cards/1",
-        json={
-            "front_content": "Updated front content",
-            "back_content": "Updated back content"
-        },
-        headers={"Authorization": "Bearer test_token"}
+        f"/decks/{test_deck.id}/cards/{test_card.id}",
+        json={"front_content": "Updated"},
+        headers=test_auth_headers
     )
-    
-    # Check the response
-    assert response.status_code == 200
-    assert response.json()["front_content"] == "Updated front content"
 
-@patch("routers.decks.get_current_user")
-@patch("routers.decks.models.Deck")
-@patch("routers.decks.models.Card")
-def test_delete_card_success(mock_card_model, mock_deck_model, mock_get_current_user):
+    # Check the response
+    assert response.status_code == 200, f"Response: {response.json()}"
+    data = response.json()
+    assert data["front_content"] == "Updated"
+
+    # Verify the change in the database
+    test_db.refresh(test_card)
+    assert test_card.front_content == "Updated"
+
+def test_delete_card_success(client, test_db, test_user, test_auth_headers):
     """Test deleting a card"""
-    # Mock the current user
-    mock_user = Mock()
-    mock_user.id = 1
-    mock_get_current_user.return_value = mock_user
-    
-    # Mock the deck
-    mock_deck = Mock()
-    mock_deck.id = 1
-    mock_deck.owner_id = 1
-    mock_deck_model.query.filter.return_value.first.return_value = mock_deck
-    
-    # Mock the card
-    mock_card = Mock()
-    mock_card.id = 1
-    mock_card.deck_id = 1
-    mock_card_model.query.filter.return_value.first.return_value = mock_card
-    
+    # Create a test deck and card
+    test_deck = Deck(title="Test Deck", owner_id=test_user.id)
+    test_card = Card(front_content="Front", back_content="Back", deck=test_deck)
+    test_db.add_all([test_deck, test_card])
+    test_db.commit()
+    test_db.refresh(test_card)
+
     # Make the request
-    response = client.delete("/decks/1/cards/1", headers={"Authorization": "Bearer test_token"})
-    
+    response = client.delete(f"/decks/{test_deck.id}/cards/{test_card.id}", headers=test_auth_headers)
+
     # Check the response
     assert response.status_code == 200
-    assert response.json() == {"message": "Card deleted successfully"}
+    assert test_db.query(Card).count() == 0
 
-@patch("routers.decks.get_current_user")
-@patch("routers.decks.models.Deck")
-@patch("routers.decks.models.User")
-def test_add_collaborator_success(mock_user_model, mock_deck_model, mock_get_current_user):
+def test_add_collaborator_success(client, test_db, test_user, test_auth_headers):
     """Test adding a collaborator to a deck"""
-    # Mock the current user
-    mock_user = Mock()
-    mock_user.id = 1
-    mock_get_current_user.return_value = mock_user
-    
-    # Mock the deck
-    mock_deck = Mock()
-    mock_deck.id = 1
-    mock_deck.owner_id = 1
-    mock_deck_model.query.filter.return_value.first.return_value = mock_deck
-    
-    # Mock the user to add as collaborator
-    mock_collaborator_user = Mock()
-    mock_collaborator_user.id = 2
-    mock_user_model.query.filter.return_value.first.return_value = mock_collaborator_user
-    
+    # Create a deck and a user to be a collaborator
+    deck = Deck(title="Test Deck", owner_id=test_user.id)
+    collaborator_user = User(email="collab@example.com", name="Collaborator", google_id="456")
+    test_db.add_all([deck, collaborator_user])
+    test_db.commit()
+    test_db.refresh(deck)
+    test_db.refresh(collaborator_user)
+
     # Make the request
     response = client.post(
-        "/decks/1/collaborators",
-        json={"deck_id": 1, "user_id": 2},
-        headers={"Authorization": "Bearer test_token"}
+        f"/decks/{deck.id}/collaborators",
+        json={"user_id": collaborator_user.id},
+        headers=test_auth_headers
     )
-    
-    # Check the response
-    assert response.status_code == 200
 
-@patch("routers.decks.get_current_user")
-@patch("routers.decks.models.Deck")
-@patch("routers.decks.models.DeckCollaborator")
-def test_remove_collaborator_success(mock_collaborator_model, mock_deck_model, mock_get_current_user):
+    # Check the response
+    assert response.status_code == 200, f"Response: {response.json()}"
+    assert test_db.query(DeckCollaborator).count() == 1
+
+def test_remove_collaborator_success(client, test_db, test_user, test_auth_headers):
     """Test removing a collaborator from a deck"""
-    # Mock the current user
-    mock_user = Mock()
-    mock_user.id = 1
-    mock_get_current_user.return_value = mock_user
-    
-    # Mock the deck
-    mock_deck = Mock()
-    mock_deck.id = 1
-    mock_deck.owner_id = 1
-    mock_deck_model.query.filter.return_value.first.return_value = mock_deck
-    
-    # Mock the collaborator
-    mock_collaborator = Mock()
-    mock_collaborator.deck_id = 1
-    mock_collaborator.user_id = 2
-    mock_collaborator_model.query.filter.return_value.first.return_value = mock_collaborator
-    
-    # Make the request
-    response = client.delete("/decks/1/collaborators/2", headers={"Authorization": "Bearer test_token"})
-    
-    # Check the response
-    assert response.status_code == 200
-    assert response.json() == {"message": "Collaborator removed successfully"}
+    # Create a deck, a collaborator user, and the collaboration
+    deck = Deck(title="Test Deck", owner_id=test_user.id)
+    collaborator_user = User(email="collab@example.com", name="Collaborator", google_id="456")
+    collaboration = DeckCollaborator(deck=deck, user=collaborator_user)
+    test_db.add_all([deck, collaborator_user, collaboration])
+    test_db.commit()
+    test_db.refresh(deck)
+    test_db.refresh(collaborator_user)
 
-@patch("routers.decks.get_current_user")
-@patch("routers.decks.models.Deck")
-@patch("routers.decks.models.DeckCollaborator")
-def test_get_collaborators_success(mock_collaborator_model, mock_deck_model, mock_get_current_user):
-    """Test getting all collaborators for a deck"""
-    # Mock the current user
-    mock_user = Mock()
-    mock_user.id = 1
-    mock_get_current_user.return_value = mock_user
-    
-    # Mock the deck
-    mock_deck = Mock()
-    mock_deck.id = 1
-    mock_deck.owner_id = 1
-    mock_deck_model.query.filter.return_value.first.return_value = mock_deck
-    
-    # Mock the collaborators
-    mock_collaborator = Mock()
-    mock_collaborator.id = 1
-    mock_collaborator.deck_id = 1
-    mock_collaborator.user_id = 2
-    mock_collaborator_model.query.filter.return_value.all.return_value = [mock_collaborator]
-    
     # Make the request
-    response = client.get("/decks/1/collaborators", headers={"Authorization": "Bearer test_token"})
-    
+    response = client.delete(
+        f"/decks/{deck.id}/collaborators/{collaborator_user.id}",
+        headers=test_auth_headers
+    )
+
     # Check the response
-    assert response.status_code == 200
-    assert isinstance(response.json(), list)
-    assert len(response.json()) > 0
+    assert response.status_code == 200, f"Response: {response.json()}"
+    assert test_db.query(DeckCollaborator).count() == 0
+
+def test_get_collaborators_success(client, test_db, test_user, test_auth_headers):
+    """Test getting all collaborators for a deck"""
+    # Create a deck, a collaborator user, and the collaboration
+    deck = Deck(title="Test Deck", owner_id=test_user.id)
+    collaborator_user = User(email="collab@example.com", name="Collaborator", google_id="456")
+    collaboration = DeckCollaborator(deck=deck, user=collaborator_user)
+    test_db.add_all([deck, collaborator_user, collaboration])
+    test_db.commit()
+    test_db.refresh(deck)
+
+    # Make the request
+    response = client.get(f"/decks/{deck.id}/collaborators", headers=test_auth_headers)
+
+    # Check the response
+    assert response.status_code == 200, f"Response: {response.json()}"
+    data = response.json()
+    assert isinstance(data, list)
+    assert len(data) == 1
+    assert data[0]["user"]["email"] == collaborator_user.email

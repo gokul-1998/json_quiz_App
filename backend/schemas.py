@@ -37,6 +37,10 @@ class CardBase(BaseModel):
 class CardCreate(CardBase):
     pass
 
+class CardUpdate(BaseModel):
+    front_content: Optional[str] = None
+    back_content: Optional[str] = None
+
 class Card(CardBase):
     id: int
     deck_id: int
@@ -54,8 +58,10 @@ class DeckBase(BaseModel):
 class DeckCreate(DeckBase):
     pass
 
-class DeckUpdate(DeckBase):
-    pass
+class DeckUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    visibility: Optional[DeckVisibility] = None
 
 class Deck(DeckBase):
     id: int
@@ -71,12 +77,13 @@ class DeckCollaboratorBase(BaseModel):
     deck_id: int
     user_id: int
 
-class DeckCollaboratorCreate(DeckCollaboratorBase):
-    pass
+class DeckCollaboratorCreate(BaseModel):
+    user_id: int
 
 class DeckCollaborator(DeckCollaboratorBase):
     id: int
     created_at: datetime
+    user: User
     
     class Config:
         orm_mode = True

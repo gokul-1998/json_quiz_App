@@ -1,5 +1,7 @@
 import pytest
 from unittest.mock import patch, Mock
+from jwt.exceptions import InvalidTokenError as JWTError
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 import sys
 import os
@@ -10,12 +12,13 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 # Import the app correctly
 from main import app
 
-client = TestClient(app)
+# Create a new client for auth tests that doesn't override get_current_user
+auth_client = TestClient(app)
 
 def test_login_google():
     """Test the Google OAuth2 login endpoint"""
-    response = client.get("/auth/login")
-    assert response.status_code == 200
+    response = auth_client.get("/auth/login", allow_redirects=False)
+    assert response.status_code == 307
     # Check that it's a redirect response
     assert response.headers["location"].startswith("https://accounts.google.com/o/oauth2/auth")
 
@@ -23,7 +26,7 @@ def test_login_google():
 @patch("routers.auth.httpx.AsyncClient.get")
 @patch("auth_utils.get_user_by_google_id")
 @patch("auth_utils.create_user")
-@patch("auth_utils.create_access_token")
+@patch("routers.auth.create_access_token")
 def test_callback_success(
     mock_create_access_token,
     mock_create_user,
@@ -57,15 +60,15 @@ def test_callback_success(
     mock_create_access_token.return_value = "test_jwt_token"
     
     # Make the request
-    response = client.get("/auth/callback?code=test_code")
+    response = auth_client.get("/auth/callback?code=test_code", allow_redirects=False)
     
     # Check the response
-    assert response.status_code == 200
+    assert response.status_code == 307
     assert "test_jwt_token" in response.headers["location"]
 
 def test_logout():
     """Test the logout endpoint"""
-    response = client.post("/auth/logout")
+    response = auth_client.post("/auth/logout")
     assert response.status_code == 200
     assert response.json() == {"message": "Logged out successfully"}
 
@@ -84,7 +87,7 @@ def test_get_user_success(mock_get_user_by_email, mock_jwt_decode):
     mock_get_user_by_email.return_value = mock_user
     
     # Make the request
-    response = client.get("/auth/user", headers={"Authorization": "Bearer test_token"})
+    response = auth_client.get("/auth/user", headers={"Authorization": "Bearer test_token"})
     
     # Check the response
     assert response.status_code == 200
@@ -94,13 +97,13 @@ def test_get_user_success(mock_get_user_by_email, mock_jwt_decode):
 def test_get_user_invalid_token(mock_jwt_decode):
     """Test getting user info with invalid token"""
     # Mock JWT decode to raise an exception
-    mock_jwt_decode.side_effect = Exception("Invalid token")
+    mock_jwt_decode.side_effect = JWTError("Invalid token")
     
-    # Make the request
-    response = client.get("/auth/user", headers={"Authorization": "Bearer invalid_token"})
-    
-    # Check the response
+    # Make the request and check for the exception
+    response = auth_client.get("/auth/user", headers={"Authorization": "Bearer invalid_token"})
     assert response.status_code == 401
+    
+
 
 @patch("routers.auth.jwt.decode")
 @patch("auth_utils.get_user_by_email")
@@ -113,7 +116,7 @@ def test_get_user_not_found(mock_get_user_by_email, mock_jwt_decode):
     mock_get_user_by_email.return_value = None
     
     # Make the request
-    response = client.get("/auth/user", headers={"Authorization": "Bearer test_token"})
+    response = auth_client.get("/auth/user", headers={"Authorization": "Bearer test_token"})
     
     # Check the response
     assert response.status_code == 404

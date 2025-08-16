@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from typing import List
-from schemas import Deck, DeckCreate, DeckUpdate, Card, CardCreate, DeckCollaborator, DeckCollaboratorCreate
+from schemas import Deck, DeckCreate, DeckUpdate, Card, CardCreate, CardUpdate, DeckCollaborator, DeckCollaboratorCreate
 from models import User, Deck as DeckModel, Card as CardModel, DeckCollaborator as DeckCollaboratorModel
 from api_router import LoggingRoute
 from auth_utils import get_user_by_email
@@ -324,7 +324,7 @@ def get_cards(
 def update_card(
     deck_id: int,
     card_id: int,
-    card_update: CardCreate,
+    card_update: CardUpdate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):

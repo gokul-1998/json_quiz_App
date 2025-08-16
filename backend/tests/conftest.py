@@ -43,7 +43,7 @@ def test_db():
     connection = engine.connect()
     transaction = connection.begin()
     session = TestingSessionLocal(bind=connection)
-    
+
     try:
         yield session
     finally:
@@ -93,18 +93,7 @@ def client(test_app, test_user):
     
     test_app.dependency_overrides.clear()
 
-@pytest.fixture(scope="function")
-def db_session():
-    """Create a database session for testing"""
-    connection = engine.connect()
-    transaction = connection.begin()
-    session = TestingSessionLocal(bind=connection)
-    
-    yield session
-    
-    session.close()
-    transaction.rollback()
-    connection.close()
+
 
 @pytest.fixture
 def mock_user():
