@@ -19,33 +19,37 @@ from database import Base, get_db
 from models import User, Deck, Card, DeckCollaborator
 from routers.decks import get_current_user
 
-# Override get_current_user for tests
-def override_get_current_user():
-    """Override get_current_user for tests"""
-    def fake_user(*args, **kwargs):
-        return None  # Will be replaced by the test's mock
-    return fake_user
-
-# Create a test database and session maker
-test_engine = create_engine(
-    "sqlite:///:memory:",
-    connect_args={"check_same_thread": False},
-    poolclass=StaticPool,
+# Create the test engine
+engine = create_engine(
+    "sqlite:///./test.db",  # Use a file instead of memory for debugging
+    connect_args={"check_same_thread": False}
 )
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
 
-# Create tables
-Base.metadata.create_all(bind=test_engine)
+TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+@pytest.fixture(scope="session", autouse=True)
+def setup_test_database():
+    """Set up test database"""
+    try:
+        Base.metadata.drop_all(bind=engine)
+        Base.metadata.create_all(bind=engine)
+        yield
+    finally:
+        Base.metadata.drop_all(bind=engine)
 
 @pytest.fixture(scope="function")
 def test_db():
-    """Create a fresh database session for each test"""
-    db = TestingSessionLocal()
+    """Get database session for testing"""
+    connection = engine.connect()
+    transaction = connection.begin()
+    session = TestingSessionLocal(bind=connection)
+    
     try:
-        yield db
+        yield session
     finally:
-        db.rollback()  # Roll back any changes
-        db.close()
+        session.close()
+        transaction.rollback()
+        connection.close()
 
 @pytest.fixture
 def test_user(test_db):
@@ -65,29 +69,29 @@ def test_auth_headers():
     return {"Authorization": "Bearer test_token"}
 
 @pytest.fixture
-def client(test_db, test_user):
-    """Create a test client for the FastAPI app"""
-    def override_get_db():
+def test_app(test_db):
+    """Create test FastAPI app with overridden dependencies"""
+    def _override_get_db():
         try:
             yield test_db
         finally:
             pass
-    
-    def override_current_user():
+
+    app.dependency_overrides[get_db] = _override_get_db
+    return app
+
+@pytest.fixture
+def client(test_app, test_user):
+    """Create test client"""
+    def override_get_current_user():
         return test_user
+
+    test_app.dependency_overrides[get_current_user] = override_get_current_user
     
-    app.dependency_overrides[get_db] = override_get_db
-    app.dependency_overrides[get_current_user] = override_current_user
+    with TestClient(test_app) as client:
+        yield client
     
-    with TestClient(app) as test_client:
-        yield test_client
-    
-    app.dependency_overrides.clear()
-    
-    app.dependency_overrides[get_db] = override_get_db
-    with TestClient(app) as c:
-        yield c
-    app.dependency_overrides.clear()
+    test_app.dependency_overrides.clear()
 
 @pytest.fixture(scope="function")
 def db_session():

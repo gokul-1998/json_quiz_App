@@ -61,7 +61,7 @@ class Deck(DeckBase):
     id: int
     owner_id: int
     created_at: datetime
-    updated_at: datetime
+    updated_at: Optional[datetime] = None
     cards: List[Card] = []
     
     class Config:

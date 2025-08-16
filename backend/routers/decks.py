@@ -3,13 +3,14 @@ from sqlalchemy.orm import Session
 from typing import List
 from schemas import Deck, DeckCreate, DeckUpdate, Card, CardCreate, DeckCollaborator, DeckCollaboratorCreate
 from models import User, Deck as DeckModel, Card as CardModel, DeckCollaborator as DeckCollaboratorModel
+from api_router import LoggingRoute
 from auth_utils import get_user_by_email
 from database import get_db
 from config import SECRET_KEY, ALGORITHM
 import jwt
 from jwt.exceptions import InvalidTokenError
 
-router = APIRouter( tags=["decks"])
+router = APIRouter(tags=["decks"])
 
 def get_current_user(request: Request, db: Session = Depends(get_db)):
     """Get current user from request"""
@@ -35,6 +36,7 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="User not found"
             )
+        request.state.user = user
         return user
     except InvalidTokenError:
         raise HTTPException(

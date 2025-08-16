@@ -18,7 +18,7 @@ def test_test_deck_route(client):
     assert response.status_code == 200
     assert response.json() == {"message": "Deck router is working"}
 
-def test_create_deck_success(client, test_db, test_user):
+def test_create_deck_success(client, test_db, test_user, test_auth_headers):
     """Test creating a deck successfully"""
     
     # Make the request
@@ -29,14 +29,19 @@ def test_create_deck_success(client, test_db, test_user):
             "description": "A test deck",
             "visibility": "private"
         },
-        headers={"Authorization": "Bearer test_token"}
+        headers=test_auth_headers
     )
     
     # Check the response
-    assert response.status_code == 200
+    assert response.status_code == 200, f"Response: {response.json()}"
     response_data = response.json()
     assert response_data["title"] == "Test Deck"
-    assert response_data["owner_id"] == test_user.id
+    
+    # Verify the deck was created in the database
+    deck = test_db.query(Deck).first()
+    assert deck is not None
+    assert deck.title == "Test Deck"
+    assert deck.owner_id == test_user.id
 
 @patch("routers.decks.get_current_user")
 def test_get_decks_success(mock_get_current_user, client, test_db):

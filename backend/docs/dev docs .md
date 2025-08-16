@@ -1,0 +1,4 @@
+- to create a new db migration
+	- `alembic revision --autogenerate -m "Your migration message"`
+- to apply the migration
+	- `alembic upgrade head`

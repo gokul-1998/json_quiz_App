@@ -7,13 +7,14 @@ import sys
 # Add the parent directory to the path so we can import config
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from config import DATABASE_URL
-
+print(DATABASE_URL)
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
 
 def get_db():
+    print("creating database session")
     db = SessionLocal()
     try:
         yield db
