@@ -1,14 +1,18 @@
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-const ProtectedRoute = ({ user, children }) => {
+const ProtectedRoute = ({ user, loading, children }) => {
   const navigate = useNavigate()
 
   useEffect(() => {
-    if (!user) {
+    if (!loading && !user) {
       navigate('/')
     }
-  }, [user, navigate])
+  }, [user, loading, navigate])
+
+  if (loading) {
+    return null; // or a loading spinner
+  }
 
   return user ? children : null
 }

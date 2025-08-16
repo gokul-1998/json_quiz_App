@@ -11,13 +11,14 @@ import Quizzes from './pages/Quizzes';
 import Decks from './pages/Decks';
 
 function App() {
-  const [user, setUser] = useState(null);
+    const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchUser = async () => {
       const token = localStorage.getItem('access_token');
-      if (token) {
-        try {
+      try {
+        if (token) {
           const response = await fetch('http://localhost:8001/auth/user', {
             headers: {
               'Authorization': `Bearer ${token}`
@@ -31,11 +32,13 @@ function App() {
             localStorage.removeItem('access_token');
             setUser(null);
           }
-        } catch (error) {
-          console.error('Error fetching user data:', error);
-          localStorage.removeItem('access_token');
-          setUser(null);
-        }
+        } 
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+        localStorage.removeItem('access_token');
+        setUser(null);
+      } finally {
+        setLoading(false);
       }
     };
     fetchUser();
@@ -82,7 +85,7 @@ function App() {
         <Route
           path="/dashboard"
           element={
-            <ProtectedRoute user={user}>
+            <ProtectedRoute user={user} loading={loading}>
               <Dashboard />
             </ProtectedRoute>
           }
@@ -90,7 +93,7 @@ function App() {
         <Route
           path="/profile"
           element={
-            <ProtectedRoute user={user}>
+            <ProtectedRoute user={user} loading={loading}>
               <Profile user={user} />
             </ProtectedRoute>
           }
@@ -98,7 +101,7 @@ function App() {
         <Route
           path="/quizzes"
           element={
-            <ProtectedRoute user={user}>
+            <ProtectedRoute user={user} loading={loading}>
               <Quizzes />
             </ProtectedRoute>
           }
@@ -106,7 +109,7 @@ function App() {
         <Route
           path="/decks"
           element={
-            <ProtectedRoute user={user}>
+            <ProtectedRoute user={user} loading={loading}>
               <Decks />
             </ProtectedRoute>
           }
