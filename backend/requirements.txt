@@ -39,6 +39,8 @@ typing_extensions==4.14.1
 urllib3==2.5.0
 uvicorn==0.15.0
 alembic==1.14.1
+reportlab==3.6.13
+python-magic==0.4.27
 
 # Testing dependencies
 pytest>=6.2.4

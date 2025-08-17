@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey, Text, Enum
+from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey, Text, Enum, JSON
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 import os
@@ -56,6 +56,7 @@ class Deck(Base):
     owner = relationship("User", back_populates="decks")
     cards = relationship("Card", back_populates="deck")
     collaborators = relationship("DeckCollaborator", back_populates="deck")
+    modules = relationship("Module", back_populates="deck", cascade="all, delete-orphan")
 
 class Card(Base):
     __tablename__ = "cards"
@@ -81,3 +82,60 @@ class DeckCollaborator(Base):
     # Relationships
     deck = relationship("Deck", back_populates="collaborators")
     user = relationship("User", back_populates="collaborations")
+
+class Module(Base):
+    __tablename__ = "modules"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, index=True)
+    description = Column(Text)
+    deck_id = Column(Integer, ForeignKey("decks.id"))
+    order = Column(Integer, default=0)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    
+    # Relationships
+    deck = relationship("Deck", back_populates="modules")
+    contents = relationship("ModuleContent", back_populates="module", cascade="all, delete-orphan")
+    questions = relationship("Question", back_populates="module", cascade="all, delete-orphan")
+
+class ContentItemType(str, enum.Enum):
+    PDF = "pdf"
+    YOUTUBE = "youtube"
+    TEXT = "text"
+
+class ModuleContent(Base):
+    __tablename__ = "module_contents"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    module_id = Column(Integer, ForeignKey("modules.id"))
+    content_type = Column(Enum(ContentItemType))
+    content_data = Column(JSON)  # Store PDF path, YouTube URL, or text content
+    order = Column(Integer, default=0)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    
+    # Relationships
+    module = relationship("Module", back_populates="contents")
+
+class QuestionType(str, enum.Enum):
+    MCQ = "mcq"
+    FILL_UP = "fill_up"
+    FLASHCARD = "flashcard"
+    MATCH_THE_FOLLOWING = "match_the_following"
+
+class Question(Base):
+    __tablename__ = "questions"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    module_id = Column(Integer, ForeignKey("modules.id"))
+    question_type = Column(Enum(QuestionType))
+    question_text = Column(Text)
+    options = Column(JSON)  # Store options for MCQ, match pairs, etc.
+    correct_answer = Column(JSON)  # Store correct answer(s)
+    order = Column(Integer, default=0)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    
+    # Relationships
+    module = relationship("Module", back_populates="questions")
